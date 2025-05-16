@@ -42,6 +42,3 @@ android/
 
 build*
 build-*.*
-
-GoogleService-Info.plist
-google-services.json

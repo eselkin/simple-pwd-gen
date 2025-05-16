@@ -5,6 +5,7 @@ import {
   Button,
   Keyboard,
   FlatList,
+  TouchableOpacity,
 } from "react-native";
 
 import { useCallback, useState } from "react";
@@ -13,6 +14,7 @@ import { generatePasswords } from "./generatePasswords";
 import { useSettingsStore } from "../../zustand";
 import { Toast } from "react-native-toast-message/lib/src/Toast";
 import Clipboard from "@react-native-clipboard/clipboard";
+import Ionicons from "@expo/vector-icons/build/Ionicons";
 
 export default function Generate() {
   const [numberOfPasswords, setNumberOfPasswords] = useState(1);
@@ -56,8 +58,7 @@ export default function Generate() {
         renderItem={({ item }) => (
           <View style={{ padding: 16 }}>
             <Text style={{ fontSize: 12 }}>{item}</Text>
-            <Button
-              title="Copy"
+            <TouchableOpacity
               onPress={() => {
                 Clipboard.setString(item);
                 Toast.show({
@@ -65,7 +66,9 @@ export default function Generate() {
                   text1: "Copied to clipboard",
                 });
               }}
-            />
+            >
+              <Ionicons name="copy-outline" size={24} color="black" />
+            </TouchableOpacity>
           </View>
         )}
         keyExtractor={(item) => item}
