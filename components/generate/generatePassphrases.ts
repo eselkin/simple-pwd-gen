@@ -20,21 +20,20 @@ export const generatePassphrases = (
   }, [] as string[]);
   const passphrases = Array.from({ length: numberOfPassphrases }, () => {
     const length = randIntBetween(options.minWords, options.maxWords);
-    console.log("length", length);
     const setWords = Array.from(
       { length },
       () => dictionaryWords[randIntBetween(0, dictionaryWords.length - 1)]
     );
+    const passphrase = [];
     if (options.useSeparator && options.separator) {
       if ((options.sepEveryNWords || 0) > 1) {
-        for (
-          let i = options.sepEveryNWords!;
-          i < setWords.length;
-          i += options.sepEveryNWords!
-        ) {
-          setWords.splice(i, 0, options.separator);
+        for (let i = 0; i < setWords.length; i++) {
+          passphrase.push(setWords[i]);
+          if ((i + 1) % options.sepEveryNWords! === 0) {
+            passphrase.push(options.separator);
+          }
         }
-        return setWords.join("");
+        return passphrase.join("");
       }
       return setWords.join(options.separator);
     }

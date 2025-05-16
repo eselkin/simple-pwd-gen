@@ -8,6 +8,8 @@ interface SettingItemNumberProps {
   update: (newValue?: number) => PasswordGenSettings;
   saveSettings: (newSettings: PasswordGenSettings) => void;
   name?: string;
+  min?: number;
+  max?: number;
 }
 
 export const SettingItemNumber: React.FC<SettingItemNumberProps> = ({
@@ -16,21 +18,30 @@ export const SettingItemNumber: React.FC<SettingItemNumberProps> = ({
   update,
   saveSettings,
   name,
+  min = 0,
+  max = 100,
 }) => {
   const [changed, setChanged] = useState(false);
   const [currentSettings, setCurrentSettings] =
     useState<PasswordGenSettings | null>(null);
+  const [valueToUpdate, setValueToUpdate] = useState<number | undefined>(
+    value ?? undefined
+  );
   const handleChange = (text: string) => {
     setChanged(true);
     if (!text) {
-      const newSettings = update(undefined);
-      setCurrentSettings(newSettings);
+      setValueToUpdate(min ?? undefined);
       return;
     }
-    const numericValue = parseInt(text, 10);
+    let numericValue = parseInt(text, 10);
     if (!isNaN(numericValue)) {
-      const newSettings = update(numericValue);
-      setCurrentSettings(newSettings);
+      if (min && numericValue <= min) {
+        numericValue = min;
+      }
+      if (max && numericValue >= max) {
+        numericValue = max;
+      }
+      setValueToUpdate(numericValue);
     }
   };
 
@@ -39,21 +50,23 @@ export const SettingItemNumber: React.FC<SettingItemNumberProps> = ({
       <Text style={settingsStyles.label}>{label}</Text>
       <TextInput
         style={[settingsStyles.input, settingsStyles.textInput]}
-        value={value ? String(value) : ""}
+        value={valueToUpdate === undefined ? "" : String(valueToUpdate)}
         onChangeText={handleChange}
         keyboardType="decimal-pad"
         returnKeyType="done"
         testID={name}
         onSubmitEditing={() => {
           Keyboard.dismiss();
-          if (changed && currentSettings) {
+          if (changed && valueToUpdate !== undefined) {
+            const currentSettings = update(valueToUpdate);
             saveSettings(currentSettings);
             setChanged(false);
           }
         }}
         onBlur={() => {
           Keyboard.dismiss();
-          if (changed && currentSettings) {
+          if (changed) {
+            const currentSettings = update(valueToUpdate);
             saveSettings(currentSettings);
             setChanged(false);
           }

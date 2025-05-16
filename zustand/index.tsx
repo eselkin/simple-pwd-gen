@@ -22,7 +22,6 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         "updateSettings",
         "updateSetting",
       ]) as Record<string, string | number | boolean | undefined | string[]>;
-      console.log("setting", setting, value);
       if (setting.startsWith("min") && value && typeof value === "number") {
         const correspondingMaxSetting = setting.replace("min", "max");
         if (
@@ -44,7 +43,6 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       }
       currentSettings[setting] = value;
       set(currentSettings);
-      console.log("currentSettings", currentSettings);
       return currentSettings as PasswordGenSettings;
     },
 }));
@@ -57,4 +55,14 @@ export type UserStore = {
 export const useUserStore = create<UserStore>((set) => ({
   user: null,
   setUser: (user: FirebaseAuthTypes.User | null) => set({ user }),
+}));
+
+export type AppCheckStore = {
+  appCheckToken: string | null;
+  setAppCheckToken: (appCheckToken: string | null) => void;
+};
+
+export const useAppCheckStore = create<AppCheckStore>((set) => ({
+  appCheckToken: null,
+  setAppCheckToken: (appCheckToken: string | null) => set({ appCheckToken }),
 }));

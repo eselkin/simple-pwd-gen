@@ -20,8 +20,6 @@ export default function SettingSelectMultiple({
 }: SettingSelectMultipleProps) {
   const updateSelected = (itemValue: string) => {
     const selected = [...value];
-    console.log("selected", selected);
-    console.log("itemValue", itemValue);
     if (selected.includes(itemValue)) {
       selected.splice(selected.indexOf(itemValue), 1);
     } else {

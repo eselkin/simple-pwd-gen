@@ -1,35 +1,35 @@
 import {
   View,
-  Text,
   ScrollView,
   TextInput,
   Button,
-  ActivityIndicator,
   SafeAreaView,
-  StyleSheet,
   Keyboard,
+  Text,
 } from "react-native";
 import { baseStyles } from "../../styles/baseView";
 import { useState } from "react";
 import {
+  createUserWithEmailAndPassword,
   getAuth,
-  signInWithCredential,
   signInWithEmailAndPassword,
 } from "@react-native-firebase/auth";
-
-export default function Signin() {
+import { styles } from "./unauthStyles";
+import Logo from "./Logo";
+import Toast from "react-native-toast-message";
+export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  if (loading) {
-    return <Text>Loading...</Text>;
-  }
   return (
     <SafeAreaView style={baseStyles.container}>
-      <Text style={baseStyles.titleText}>Signin</Text>
+      <Logo />
       <View style={styles.innerContainer}>
         <ScrollView>
+          <Text style={{ fontSize: 18, paddingHorizontal: 20 }}>
+            Signup as a new user
+          </Text>
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.textInput}
@@ -64,18 +64,33 @@ export default function Signin() {
             />
             {!!email && !!password && (
               <Button
-                title="Signin"
-                testID="signin"
+                title="Signup"
+                testID="signup"
                 disabled={loading}
                 onPress={() => {
                   setLoading(true);
-                  signInWithEmailAndPassword(getAuth(), email, password)
+                  createUserWithEmailAndPassword(getAuth(), email, password)
                     .then((success) => {
                       setLoading(false);
                     })
                     .catch((e) => {
-                      console.error(e);
-                      setLoading(false);
+                      if (e.code === "auth/email-already-in-use") {
+                        setLoading(false);
+                        Toast.show({
+                          type: "error",
+                          text1: "Email already in use",
+                          bottomOffset: 100,
+                          position: "bottom",
+                        });
+                      } else {
+                        setLoading(false);
+                        Toast.show({
+                          type: "error",
+                          text1: e.message,
+                          bottomOffset: 100,
+                          position: "bottom",
+                        });
+                      }
                     });
                 }}
               />
@@ -86,26 +101,3 @@ export default function Signin() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  innerContainer: {
-    flex: 1,
-    justifyContent: "center",
-    width: "100%",
-  },
-  inputContainer: {
-    flexDirection: "column",
-    flex: 1,
-    gap: 20,
-    padding: 20,
-  },
-  textInput: {
-    width: "100%",
-    height: 40,
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "gray",
-    borderRadius: 5,
-    padding: 10,
-  },
-});

@@ -1,40 +1,49 @@
 import { StatusBar } from "expo-status-bar";
-import {
-  Button,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { Suspense, useEffect, useState } from "react";
+import { Text, TouchableOpacity, View } from "react-native";
+import { useEffect, useState } from "react";
 import {
   FirebaseAuthTypes,
   getAuth,
   signOut,
 } from "@react-native-firebase/auth";
 import { onAuthStateChanged } from "@react-native-firebase/auth";
-import Signin from "./components/auth/Singin";
+import { getApp } from "@react-native-firebase/app";
+import { ReactNativeFirebaseAppCheckProvider } from "@react-native-firebase/app-check";
+import { initializeAppCheck } from "@react-native-firebase/app-check";
 import firestore from "@react-native-firebase/firestore";
-import { Settings } from "./components/settings/Settings";
+import { Settings } from "./components/settings";
 import { NavigationContainer } from "@react-navigation/native";
 import { type PasswordGenSettings } from "./settings";
 import { defaultSettings, fromFirebaseSettings } from "./settings";
 import {
   createBottomTabNavigator,
   BottomTabScreenProps,
-  BottomTabBarProps,
-  BottomTabBarButtonProps,
 } from "@react-navigation/bottom-tabs";
-import Nav from "./components/nav";
-import { useSettingsStore, useUserStore } from "./zustand";
+import { useAppCheckStore, useSettingsStore, useUserStore } from "./zustand";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Generate from "./components/generate";
 import { Ionicons } from "@expo/vector-icons";
 import Toast from "react-native-toast-message";
+import { pageViewStyles } from "./styles/pageView";
+import Unauthorized from "./components/unauth";
+import Logo from "./components/unauth/Logo";
+import { getCrashlytics, log } from "@react-native-firebase/crashlytics";
 
 // @ts-ignore
 globalThis.RNFB_SILENCE_MODULAR_DEPRECATION_WARNINGS = true;
+
+const rnfbProvider = new ReactNativeFirebaseAppCheckProvider();
+rnfbProvider.configure({
+  apple: {
+    provider: __DEV__ ? "debug" : "appAttestWithDeviceCheckFallback",
+    debugToken: "71406E95-D73C-4D52-8D96-21EE684C2DF6",
+  },
+});
+
+const appCheck = initializeAppCheck(getApp(), {
+  provider: rnfbProvider,
+  isTokenAutoRefreshEnabled: true,
+});
 
 type RootStackParamList = {
   Generate: undefined;
@@ -45,6 +54,22 @@ const Tab = createBottomTabNavigator<RootStackParamList>();
 export type BottomTabProps = BottomTabScreenProps<RootStackParamList>;
 
 export default function App() {
+  const { setAppCheckToken } = useAppCheckStore();
+  useEffect(() => {
+    (async () => {
+      try {
+        // `appCheckInstance` is the saved return value from initializeAppCheck
+        const { token } = await (await appCheck).getToken(true);
+        if (token.length > 0) {
+          setAppCheckToken(token);
+        }
+      } catch (error) {
+        log(getCrashlytics(), "AppCheck verification failed");
+        throw error;
+      }
+    })();
+  }, []);
+
   // Set an initializing state whilst Firebase connects
   const [initializing, setInitializing] = useState(true);
   const { user, setUser } = useUserStore();
@@ -63,7 +88,6 @@ export default function App() {
       .then((doc) => {
         if (doc?.exists()) {
           if (doc.data()) {
-            console.log("doc.data()", doc.data());
             updateSettings(
               fromFirebaseSettings(doc.data() as PasswordGenSettings)
             );
@@ -83,24 +107,31 @@ export default function App() {
 
   if (initializing) return null;
   if (!user) {
-    return <Signin />;
+    return (
+      <>
+        <Unauthorized />
+        <Toast />
+      </>
+    );
   }
 
   return (
     <>
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={pageViewStyles.container}>
         <NavigationContainer>
-          <View style={styles.main}>
+          <View style={pageViewStyles.main}>
             <Tab.Navigator initialRouteName="Generate">
               <Tab.Screen
                 name="Generate"
                 component={Generate}
                 options={{
+                  headerLeft: () => <Logo width="32" height="32" />,
+                  title: "Generate Passwords",
                   tabBarLabel: "Generate",
                   tabBarIcon: ({ color, size }) => (
                     <Ionicons name="key" color={color} size={size} />
                   ),
-                  tabBarLabelStyle: styles.tabBarLabel,
+                  tabBarLabelStyle: pageViewStyles.tabBarLabel,
                 }}
               />
               <Tab.Screen
@@ -108,7 +139,7 @@ export default function App() {
                 component={Settings}
                 options={{
                   tabBarLabel: "Settings",
-                  tabBarLabelStyle: styles.tabBarLabel,
+                  tabBarLabelStyle: pageViewStyles.tabBarLabel,
                   tabBarIcon: ({ color, size }) => (
                     <Ionicons
                       name="settings"
@@ -152,26 +183,3 @@ export default function App() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-  },
-  nav: {
-    flex: 1,
-    width: "100%",
-    backgroundColor: "red",
-  },
-  main: {
-    flex: 10,
-    width: "100%",
-  },
-  tabBarLabel: {
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-});

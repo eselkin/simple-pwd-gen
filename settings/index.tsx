@@ -18,6 +18,9 @@ export type PasswordGenSettings = {
   sepEveryNCharacters?: number;
   languages?: string[];
   useSeparator?: boolean;
+  numberOfPasswordsGenerated?: number;
+  timeoutToClearPasswords?: number;
+  shouldResetPasswords?: boolean;
 };
 
 export const defaultSettings: PasswordGenSettings = {
@@ -40,6 +43,9 @@ export const defaultSettings: PasswordGenSettings = {
   excludeCharacters: false,
   languages: ["en"],
   useSeparator: true,
+  numberOfPasswordsGenerated: 0,
+  timeoutToClearPasswords: 40,
+  shouldResetPasswords: true,
 };
 
 export const fromFirebaseSettings = (settings: PasswordGenSettings) => {

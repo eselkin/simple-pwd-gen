@@ -1,6 +1,6 @@
 {
   "en": {
-    "alphabet": "abcdefghijklmnopqrstuvwxyz1234567890",
+    "alphabet": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
     "words": [
       "the",
       "be",
@@ -42597,7 +42597,7 @@
     ]
   },
   "es": {
-    "alphabet": "abcdefghijklmnopqrstuvwxyzñàáéíóúüç",
+    "alphabet": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZÇÀÁÉÍÓÚÜÑàáéíóúüç",
     "words": [
       "hola",
       "mundo",

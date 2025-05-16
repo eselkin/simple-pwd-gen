@@ -20,36 +20,46 @@ export const Settings = () => {
   useScrollToTop(ref);
 
   const saveSettings = useCallback(
-    (settingsToSave: PasswordGenSettings) => {
-      if (!settingsToSave) {
+    async (settingsToSave: PasswordGenSettings) => {
+      if (!settingsToSave || !user) {
         return;
       }
-      firestore()
-        .collection("infoandsettings")
-        .doc(user?.uid)
-        .update({ ...settingsToSave })
-        .then(() => {
-          Toast.show({
-            type: "success",
-            text1: "Settings saved",
-            position: "bottom",
-            bottomOffset: 100,
-            avoidKeyboard: false,
-          });
-        })
-        .catch((error) => {
-          Toast.show({
-            type: "error",
-            text1: "Error saving settings. Try again later",
-            position: "bottom",
-            bottomOffset: 100,
-          });
-          log(getCrashlytics(), error.message);
-        });
+      const doc = firestore().collection("infoandsettings").doc(user.uid);
+      const exists = (await doc.get()).exists();
+      if (exists) {
+        doc
+          .update({ ...settingsToSave })
+          .then(() => {
+            Toast.show({
+              text1: `Settings updated`,
+              type: "success",
+              position: "bottom",
+              bottomOffset: 100,
+              avoidKeyboard: false,
+            });
+          })
+          .catch((e) =>
+            log(getCrashlytics(), `could not update doc for user ${user.uid}`)
+          );
+      } else {
+        doc
+          .set({ ...settingsToSave })
+          .then(() => {
+            Toast.show({
+              text1: `Settings created`,
+              type: "success",
+              position: "bottom",
+              bottomOffset: 100,
+              avoidKeyboard: false,
+            });
+          })
+          .catch((e) =>
+            log(getCrashlytics(), `could not create doc for user ${user.uid}`)
+          );
+      }
     },
     [user]
   );
-
   if (!settings) {
     return <Text>No settings found</Text>;
   }
@@ -65,12 +75,22 @@ export const Settings = () => {
         >
           <Text
             style={{
-              fontSize: 12,
-              paddingVertical: 16,
+              fontSize: 14,
+              paddingTop: 8,
               paddingHorizontal: 8,
             }}
           >
             Logged in as {user?.email}
+          </Text>
+          <Text
+            style={{
+              fontSize: 14,
+              paddingTop: 6,
+              paddingBottom: 8,
+              paddingHorizontal: 8,
+            }}
+          >
+            {settings.numberOfPasswordsGenerated} passwords generated
           </Text>
           <SettingView>
             <SettingItemToggle
@@ -96,6 +116,8 @@ export const Settings = () => {
               update={(newValue) => updateSetting("minLength")(newValue)}
               saveSettings={saveSettings}
               name="min-length"
+              min={1}
+              max={100}
             />
           </SettingView>
           <SettingView show={settings.type === "random-password"}>
@@ -105,38 +127,58 @@ export const Settings = () => {
               update={(newValue) => updateSetting("maxLength")(newValue)}
               saveSettings={saveSettings}
               name="max-length"
+              min={1}
+              max={101}
             />
           </SettingView>
           <SettingView show={settings.type === "random-words"}>
             <SettingItemNumber
               label="Min Words"
-              value={settings.minWords ?? 0}
+              value={settings.minWords}
               update={(newValue) => updateSetting("minWords")(newValue)}
               saveSettings={saveSettings}
+              name="min-words"
+              min={1}
+              max={settings.maxWords ?? 50}
             />
           </SettingView>
           <SettingView show={settings.type === "random-words"}>
             <SettingItemNumber
               label="Max Words"
-              value={settings.maxWords ?? 0}
+              value={settings.maxWords}
               update={(newValue) => updateSetting("maxWords")(newValue)}
               saveSettings={saveSettings}
+              name="max-words"
+              min={settings.minWords ?? 1}
+              max={51}
             />
           </SettingView>
           <SettingView show={settings.type === "random-password"}>
             <SettingItemNumber
               label="# Uppercase"
-              value={settings.uppercase ?? 0}
+              value={settings.uppercase}
               update={(newValue) => updateSetting("uppercase")(newValue)}
               saveSettings={saveSettings}
+              name="uppercase"
+              min={0}
+              max={20}
             />
           </SettingView>
           <SettingView show={settings.type === "random-password"}>
             <SettingItemNumber
               label="# Lowercase"
-              value={settings.lowercase ?? 0}
+              value={settings.lowercase}
               update={(newValue) => updateSetting("lowercase")(newValue)}
               saveSettings={saveSettings}
+              name="lowercase"
+              min={0}
+              max={
+                (settings.maxLength ?? 101) -
+                (settings.uppercase ??
+                  0 + settings.special ??
+                  0 + settings.numbers ??
+                  0)
+              }
             />
           </SettingView>
           <SettingView show={settings.type === "random-password"}>
@@ -155,13 +197,21 @@ export const Settings = () => {
               saveSettings={saveSettings}
             />
           </SettingView>
+          <SettingView show={settings.type === "random-password"}>
+            <SettingItemText
+              label="Special Characters"
+              value={settings.specialCharacters ?? ""}
+              update={(newValue) =>
+                updateSetting("specialCharacters")(newValue)
+              }
+              saveSettings={saveSettings}
+            />
+          </SettingView>
           <SettingView>
             <SettingItemToggle
               label="Use Separator"
               value={settings.useSeparator ?? false}
-              update={(newValue) => {
-                const currentSettings = updateSetting("useSeparator")(newValue);
-              }}
+              update={(newValue) => updateSetting("useSeparator")(newValue)}
               saveSettings={saveSettings}
             />
           </SettingView>
@@ -175,7 +225,11 @@ export const Settings = () => {
             />
           </SettingView>
           <SettingView
-            show={(settings.useSeparator ?? false) && !!settings.separator}
+            show={
+              settings.type === "random-password" &&
+              (settings.useSeparator ?? false) &&
+              !!settings.separator
+            }
           >
             <SettingItemNumber
               label="Separator Every N Characters"
@@ -222,13 +276,34 @@ export const Settings = () => {
               saveSettings={saveSettings}
             />
           </SettingView>
-          <SettingView show={settings.type === "random-words"}>
+          <SettingView>
             <SettingSelectMultiple
               label="Dictionaries"
               value={settings.languages ?? []}
               options={dictionaryNames}
               update={(newValue) => updateSetting("languages")(newValue)}
               saveSettings={saveSettings}
+            />
+          </SettingView>
+          <SettingView>
+            <SettingItemToggle
+              label="Reset Passwords After Generation"
+              value={settings.shouldResetPasswords ?? true}
+              update={(newValue) =>
+                updateSetting("shouldResetPasswords")(newValue)
+              }
+              saveSettings={saveSettings}
+            />
+          </SettingView>
+          <SettingView show={settings.shouldResetPasswords}>
+            <SettingItemNumber
+              label="Clear passwords after (seconds)"
+              value={settings.timeoutToClearPasswords}
+              update={(newValue) =>
+                updateSetting("timeoutToClearPasswords")(newValue)
+              }
+              saveSettings={saveSettings}
+              name="timeout-to-clear"
             />
           </SettingView>
         </ScrollView>
