@@ -1,0 +1,12 @@
+appId: com.eliselkin.simplepwd
+---
+- launchApp
+- tapOn: "email"
+- inputText: "eli@eliselkin.com"
+- tapOn: "password"
+- inputText: "123456"
+- tapOn: "done"
+- tapOn:
+      id: "signin"
+- tapOn:
+      id: "settings"

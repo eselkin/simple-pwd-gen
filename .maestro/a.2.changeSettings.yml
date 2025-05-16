@@ -1,0 +1,16 @@
+appId: com.eliselkin.simplepwd
+---
+- launchApp
+- tapOn:
+      id: "settings"
+- tapOn:
+      id: "password-type"
+- tapOn:
+      id: "min-length"
+- inputText: "12"
+- tapOn: "done"
+- tapOn:
+      id: "max-length"
+- eraseText
+- inputText: "10"
+- tapOn: "done"
